@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EB_Garamond, Lato } from "next/font/google";
+import { NavLinks } from "./nav-links";
 import "./globals.css";
 
 // Serif headings signal legal authority; humanist sans keeps body text highly readable.
@@ -65,14 +66,7 @@ export default function RootLayout({
               </svg>
               <span>Clause<span className="text-gold">Compass</span></span>
             </Link>
-            <nav aria-label="Main navigation" className="flex items-center gap-4 text-sm">
-              <Link href="/" className="text-muted hover:text-foreground transition-colors hover:underline">
-                Upload
-              </Link>
-              <Link href="/compare" className="text-muted hover:text-foreground transition-colors hover:underline">
-                Compare
-              </Link>
-            </nav>
+            <NavLinks />
           </div>
         </header>
 

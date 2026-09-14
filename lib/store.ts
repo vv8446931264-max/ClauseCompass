@@ -33,9 +33,20 @@ export function setDoc(doc: ExtractedDoc): void {
   store.set(doc.id, { doc, decisionMaps: new Map(), createdAt: Date.now() });
 }
 
+// @perf-audit: O(1) freshness check on the read path instead of an O(n) full-store scan
+// per request; the setInterval sweep handles bulk cleanup.
+function live(id: string): DocSession | undefined {
+  const s = store.get(id);
+  if (!s) return undefined;
+  if (Date.now() - s.createdAt > TTL_MS) {
+    store.delete(id);
+    return undefined;
+  }
+  return s;
+}
+
 export function getDoc(id: string): ExtractedDoc | undefined {
-  purgeExpired();
-  return store.get(id)?.doc;
+  return live(id)?.doc;
 }
 
 export function setDecisionMap(
@@ -43,8 +54,7 @@ export function setDecisionMap(
   map: ValidatedDecisionMap,
   language = "English"
 ): void {
-  purgeExpired();
-  const session = store.get(docId);
+  const session = live(docId);
   if (session) session.decisionMaps.set(language, map);
 }
 
@@ -52,7 +62,7 @@ export function getDecisionMap(
   docId: string,
   language = "English"
 ): ValidatedDecisionMap | undefined {
-  return store.get(docId)?.decisionMaps.get(language);
+  return live(docId)?.decisionMaps.get(language);
 }
 
 export function deleteDoc(id: string): boolean {

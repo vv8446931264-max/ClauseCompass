@@ -494,7 +494,7 @@ const ClaimCard = memo(function ClaimCard({
           <button
             key={span.id}
             onClick={() => onSelectSpan(span)}
-            className="text-xs bg-surface/80 border border-border-custom rounded-md px-2 py-0.5 hover:bg-surface hover:shadow-sm transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 inline-flex items-center gap-1 text-gold"
+            className="text-xs bg-surface/80 border border-border-custom rounded-md px-2.5 min-h-[24px] hover:bg-surface hover:shadow-sm transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 inline-flex items-center gap-1 text-gold"
             aria-label={`View source: page ${span.page}`}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v16H6a2 2 0 00-2 2V5zM20 5a2 2 0 00-2-2h-5v16h5a2 2 0 012 2V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>

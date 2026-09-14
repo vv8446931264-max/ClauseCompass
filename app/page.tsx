@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type FormEvent, type DragEvent } from "react";
+import { useState, useRef, type FormEvent, type DragEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 
 const SAMPLE_TEXT = `RESIDENTIAL LEASE AGREEMENT
@@ -139,12 +139,36 @@ export default function UploadPage() {
     setSelectedFile(file?.name ?? "");
   }
 
+  // Full WAI-ARIA tab keyboard support (arrow/Home/End move + focus the target tab).
+  function handleTabKeys(e: KeyboardEvent) {
+    const order: ("upload" | "paste")[] = ["upload", "paste"];
+    const i = order.indexOf(mode);
+    let next = i;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (i + 1) % 2;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i + 1) % 2;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = 1;
+    else return;
+    e.preventDefault();
+    const target = order[next]!;
+    setMode(target);
+    document.getElementById(target === "upload" ? "tab-upload" : "tab-paste")?.focus();
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <ShowcaseImage
-        src="/images/hero.webp"
-        alt="ClauseCompass — navigate legal documents with AI-verified citations"
-      />
+      <figure className="rounded-2xl overflow-hidden border border-border-custom shadow-sm">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/hero.webp"
+          alt="ClauseCompass — navigate legal documents with AI-verified citations"
+          width={1500}
+          height={789}
+          decoding="async"
+          fetchPriority="high"
+          className="w-full h-auto block"
+        />
+      </figure>
 
       <div className="text-center space-y-3">
         <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gold">
@@ -168,13 +192,15 @@ export default function UploadPage() {
           className="flex gap-1 p-1 bg-surface-alt rounded-lg w-fit mx-auto"
           role="tablist"
           aria-label="Document input method"
+          onKeyDown={handleTabKeys}
         >
           <button
             type="button"
             role="tab"
             aria-selected={mode === "upload"}
-            aria-controls="tabpanel-upload"
+            aria-controls="io-tabpanel"
             id="tab-upload"
+            tabIndex={mode === "upload" ? 0 : -1}
             onClick={() => setMode("upload")}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
               mode === "upload"
@@ -188,8 +214,9 @@ export default function UploadPage() {
             type="button"
             role="tab"
             aria-selected={mode === "paste"}
-            aria-controls="tabpanel-paste"
+            aria-controls="io-tabpanel"
             id="tab-paste"
+            tabIndex={mode === "paste" ? 0 : -1}
             onClick={() => setMode("paste")}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
               mode === "paste"
@@ -201,7 +228,7 @@ export default function UploadPage() {
           </button>
         </div>
 
-        <div role="tabpanel" id={mode === "upload" ? "tabpanel-upload" : "tabpanel-paste"} aria-labelledby={mode === "upload" ? "tab-upload" : "tab-paste"}>
+        <div role="tabpanel" id="io-tabpanel" aria-labelledby={mode === "upload" ? "tab-upload" : "tab-paste"}>
         {mode === "upload" ? (
           <div
             onDragOver={(e) => {
@@ -320,12 +347,6 @@ export default function UploadPage() {
 
 /** "Access" story band — reinforces the multilingual differentiator with the illustration. */
 function AccessBand() {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => setOk(true);
-    img.src = "/images/access.webp";
-  }, []);
   return (
     <section
       aria-label="Multilingual access"
@@ -341,12 +362,18 @@ function AccessBand() {
           cited source quotes stay verbatim, so verification never breaks.
         </p>
       </div>
-      {ok && (
-        <div className="min-h-[180px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/access.webp" alt="Legal understanding in multiple languages" className="w-full h-full object-cover" />
-        </div>
-      )}
+      <div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/access.webp"
+          alt="Legal understanding in multiple languages"
+          width={1400}
+          height={788}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover"
+        />
+      </div>
     </section>
   );
 }
@@ -405,47 +432,13 @@ function ProofStrip() {
   );
 }
 
-/** Renders a product screenshot only once the file actually loads — no broken-image box before assets are added. */
-function ShowcaseImage({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => setOk(true);
-    img.src = src;
-  }, [src]);
-  if (!ok) return null;
-  return (
-    <figure className="rounded-2xl overflow-hidden border border-border-custom shadow-sm">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="w-full h-auto block" />
-      {caption && (
-        <figcaption className="text-xs text-muted text-center py-2 bg-surface-alt">{caption}</figcaption>
-      )}
-    </figure>
-  );
-}
-
 const SHOWCASE = [
   { src: "/images/analysis.webp", alt: "Decision Map with categorized clauses and risk badges", caption: "Decision Map by category" },
   { src: "/images/citations.webp", alt: "Every claim linked to its verified source excerpt", caption: "Verified source citations" },
   { src: "/images/compare.webp", alt: "Two-document comparison showing added, removed, and changed clauses", caption: "Two-version comparison" },
 ];
 
-/** Only renders if at least one showcase image is present, so the section is invisible until assets are added. */
 function ShowcaseSection() {
-  const [anyLoaded, setAnyLoaded] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    SHOWCASE.forEach((s) => {
-      const img = new window.Image();
-      img.onload = () => alive && setAnyLoaded(true);
-      img.src = s.src;
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-  if (!anyLoaded) return null;
   return (
     <section className="space-y-4 pt-2" aria-label="Product screenshots">
       <div className="text-center space-y-1">
@@ -454,7 +447,20 @@ function ShowcaseSection() {
       </div>
       <div className="grid sm:grid-cols-3 gap-3">
         {SHOWCASE.map((s) => (
-          <ShowcaseImage key={s.src} {...s} />
+          <figure key={s.src} className="rounded-xl overflow-hidden border border-border-custom shadow-sm">
+            {/* @perf-audit: explicit dimensions reserve space (CLS 0) + lazy-load below the fold */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={s.src}
+              alt={s.alt}
+              width={1400}
+              height={788}
+              loading="lazy"
+              decoding="async"
+              className="w-full h-auto block"
+            />
+            <figcaption className="text-xs text-muted text-center py-2 bg-surface-alt">{s.caption}</figcaption>
+          </figure>
         ))}
       </div>
     </section>
