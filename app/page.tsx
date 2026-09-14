@@ -146,49 +146,21 @@ export default function UploadPage() {
         alt="ClauseCompass — navigate legal documents with AI-verified citations"
       />
 
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-3">
         <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gold">
           AI for Legal Assistance &amp; Access
         </p>
         <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.1]">
-          Understand what you&rsquo;re about to sign
+          Know exactly what you&rsquo;re signing
         </h1>
         <p className="text-muted text-lg leading-relaxed max-w-xl mx-auto">
-          Upload any contract, lease, or agreement for a plain-language Decision
-          Map where{" "}
+          Upload a contract and get a plain-language map of risks, obligations,
+          and deadlines &mdash;{" "}
           <span className="text-foreground font-semibold">
-            every claim links to the exact source text
+            each finding linked to the exact clause
           </span>{" "}
-          &mdash; verified, so the AI can&rsquo;t make things up.
+          that proves it.
         </p>
-      </div>
-
-      <ProofStrip />
-
-      <div className="grid grid-cols-3 gap-4 text-center">
-        <Step n="1" title="Upload" desc="PDF or text — or try our sample" />
-        <Step n="2" title="Analyze" desc="AI extracts and groups every clause" />
-        <Step n="3" title="Verify" desc="Each claim cited to the source" />
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          onClick={handleSample}
-          disabled={loading}
-          className="accent-cta inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-50"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {loading ? "Loading…" : "Try a Sample Lease Agreement"}
-        </button>
-      </div>
-
-      <div className="relative flex items-center justify-center">
-        <div className="border-t border-border-custom w-full" />
-        <span className="bg-background px-4 text-sm text-faint absolute">
-          or upload your own
-        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -312,27 +284,32 @@ export default function UploadPage() {
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+          disabled={loading || (mode === "upload" ? !selectedFile : !pastedText.trim())}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Processing…" : "Analyze Document"}
         </button>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-sm">
+          <button
+            type="button"
+            onClick={handleSample}
+            disabled={loading}
+            className="text-gold font-medium hover:underline disabled:opacity-50"
+          >
+            New here? Try a sample lease &rarr;
+          </button>
+          <span className="text-faint flex items-center gap-1.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+            Private &middot; auto-deleted in 30 min
+          </span>
+        </div>
       </form>
 
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200 space-y-1">
-        <p className="font-semibold flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-          Privacy First
-        </p>
-        <p>
-          Your documents are processed in memory only and automatically deleted
-          after 30 minutes. Nothing is stored permanently. You can delete your
-          document at any time.
-        </p>
-      </div>
+      <ProofStrip />
 
       <AccessBand />
 
@@ -371,21 +348,6 @@ function AccessBand() {
         </div>
       )}
     </section>
-  );
-}
-
-function Step({ n, title, desc }: { n: string; title: string; desc: string }) {
-  return (
-    <div className="space-y-1.5">
-      <div
-        className="mx-auto flex items-center justify-center w-9 h-9 rounded-full bg-surface border border-border-custom text-gold font-serif font-semibold"
-        aria-hidden="true"
-      >
-        {n}
-      </div>
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="text-xs text-faint leading-relaxed">{desc}</p>
-    </div>
   );
 }
 
@@ -464,9 +426,9 @@ function ShowcaseImage({ src, alt, caption }: { src: string; alt: string; captio
 }
 
 const SHOWCASE = [
-  { src: "/images/analysis.webp", alt: "Decision Map with categorized clauses and risk badges", caption: "Decision Map — clauses grouped by obligation, right, payment, risk" },
-  { src: "/images/citations.webp", alt: "Every claim linked to its verified source excerpt", caption: "Every claim links to its exact, verified source text" },
-  { src: "/images/compare.webp", alt: "Two-document comparison showing added, removed, and changed clauses", caption: "Compare two versions — added, removed, and changed clauses" },
+  { src: "/images/analysis.webp", alt: "Decision Map with categorized clauses and risk badges", caption: "Decision Map by category" },
+  { src: "/images/citations.webp", alt: "Every claim linked to its verified source excerpt", caption: "Verified source citations" },
+  { src: "/images/compare.webp", alt: "Two-document comparison showing added, removed, and changed clauses", caption: "Two-version comparison" },
 ];
 
 /** Only renders if at least one showcase image is present, so the section is invisible until assets are added. */
@@ -485,14 +447,16 @@ function ShowcaseSection() {
   }, []);
   if (!anyLoaded) return null;
   return (
-    <section className="space-y-4 pt-4" aria-label="Product screenshots">
+    <section className="space-y-4 pt-2" aria-label="Product screenshots">
       <div className="text-center space-y-1">
         <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gold">See it in action</p>
         <h2 className="text-2xl font-semibold tracking-tight">From dense legalese to clear answers</h2>
       </div>
-      {SHOWCASE.map((s) => (
-        <ShowcaseImage key={s.src} {...s} />
-      ))}
+      <div className="grid sm:grid-cols-3 gap-3">
+        {SHOWCASE.map((s) => (
+          <ShowcaseImage key={s.src} {...s} />
+        ))}
+      </div>
     </section>
   );
 }

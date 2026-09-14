@@ -8,7 +8,7 @@ export default function ComparePage() {
   const file2Ref = useRef<HTMLInputElement>(null);
   const [text1, setText1] = useState("");
   const [text2, setText2] = useState("");
-  const [mode, setMode] = useState<"upload" | "paste">("paste");
+  const [mode, setMode] = useState<"upload" | "paste">("upload");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ValidatedCompareResult | null>(null);
@@ -112,9 +112,13 @@ export default function ComparePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Compare Two Documents</h1>
+        <p className="text-xs font-semibold tracking-[0.2em] uppercase text-gold">
+          Version comparison
+        </p>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">See what changed</h1>
         <p className="text-muted">
-          Upload or paste two versions of a contract to see what changed.
+          Upload two versions of a contract and get a clause-by-clause breakdown &mdash; added,
+          removed, and changed &mdash; each side cited to its source.
         </p>
       </div>
 

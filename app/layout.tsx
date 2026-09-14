@@ -77,11 +77,10 @@ export default function RootLayout({
         </header>
 
         <div
-          role="status"
-          className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs text-center py-1.5 px-4"
+          role="note"
+          className="border-b border-border-custom bg-surface text-faint text-xs text-center py-1.5 px-4"
         >
-          This tool provides information only, not legal advice. Consult a
-          licensed legal professional for guidance specific to your situation.
+          Information only, not legal advice &mdash; consult a licensed professional for your situation.
         </div>
 
         <main id="main-content" className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">

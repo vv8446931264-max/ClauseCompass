@@ -6,13 +6,13 @@ import type { ValidatedDecisionMap, ValidatedClaim, SourceSpan } from "@/lib/sch
 import { SUPPORTED_LANGUAGES } from "@/lib/schemas";
 import { riskScore } from "@/lib/risk";
 
-const CATEGORY_META: Record<string, { label: string; icon: string; bg: string; border: string; text: string }> = {
-  obligation: { label: "Obligations", icon: "📋", bg: "bg-orange-50 dark:bg-orange-950/20", border: "border-orange-200 dark:border-orange-800", text: "text-orange-800 dark:text-orange-300" },
-  right: { label: "Rights", icon: "✅", bg: "bg-green-50 dark:bg-green-950/20", border: "border-green-200 dark:border-green-800", text: "text-green-800 dark:text-green-300" },
-  key_date: { label: "Key Dates", icon: "📅", bg: "bg-purple-50 dark:bg-purple-950/20", border: "border-purple-200 dark:border-purple-800", text: "text-purple-800 dark:text-purple-300" },
-  payment: { label: "Payments", icon: "💰", bg: "bg-blue-50 dark:bg-blue-950/20", border: "border-blue-200 dark:border-blue-800", text: "text-blue-800 dark:text-blue-300" },
-  termination: { label: "Termination", icon: "🚪", bg: "bg-red-50 dark:bg-red-950/20", border: "border-red-200 dark:border-red-800", text: "text-red-800 dark:text-red-300" },
-  risk_flag: { label: "Risk Flags", icon: "⚠️", bg: "bg-yellow-50 dark:bg-yellow-950/20", border: "border-yellow-200 dark:border-yellow-800", text: "text-yellow-800 dark:text-yellow-300" },
+const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; bg: string; border: string; text: string }> = {
+  obligation: { label: "Obligations", icon: <><rect x="8" y="3" width="8" height="4" rx="1" stroke="currentColor" strokeWidth="1.6" /><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></>, bg: "bg-orange-50 dark:bg-orange-950/20", border: "border-orange-200 dark:border-orange-800", text: "text-orange-800 dark:text-orange-300" },
+  right: { label: "Rights", icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" /><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></>, bg: "bg-green-50 dark:bg-green-950/20", border: "border-green-200 dark:border-green-800", text: "text-green-800 dark:text-green-300" },
+  key_date: { label: "Key Dates", icon: <><rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" /><path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></>, bg: "bg-purple-50 dark:bg-purple-950/20", border: "border-purple-200 dark:border-purple-800", text: "text-purple-800 dark:text-purple-300" },
+  payment: { label: "Payments", icon: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" /><path d="M12 7v10M9.5 10a2.5 2.5 0 012.5-2c1.4 0 2 .8 2 1.6 0 2-4 1.4-4 3 0 1 .8 1.6 2 1.6a2.5 2.5 0 002.5-2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></>, bg: "bg-blue-50 dark:bg-blue-950/20", border: "border-blue-200 dark:border-blue-800", text: "text-blue-800 dark:text-blue-300" },
+  termination: { label: "Termination", icon: <><path d="M14 4h3a1 1 0 011 1v14a1 1 0 01-1 1h-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 8l-4 4 4 4M6 12h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></>, bg: "bg-red-50 dark:bg-red-950/20", border: "border-red-200 dark:border-red-800", text: "text-red-800 dark:text-red-300" },
+  risk_flag: { label: "Risk Flags", icon: <><path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></>, bg: "bg-yellow-50 dark:bg-yellow-950/20", border: "border-yellow-200 dark:border-yellow-800", text: "text-yellow-800 dark:text-yellow-300" },
 };
 
 const SEVERITY_STYLE: Record<string, { bg: string; text: string; label: string }> = {
@@ -71,6 +71,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
   const [copied, setCopied] = useState(false);
   const [progressStep, setProgressStep] = useState(0);
   const [language, setLanguage] = useState<string>("English");
+  const [retryNonce, setRetryNonce] = useState(0);
   const answerRef = useRef<HTMLDivElement>(null);
   const sourceRef = useRef<HTMLDivElement>(null);
   const askAbortRef = useRef<AbortController | null>(null);
@@ -109,7 +110,15 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     return () => {
       cancelled = true;
     };
-  }, [id, language]);
+  }, [id, language, retryNonce]);
+
+  function retryAnalysis() {
+    setError("");
+    setProgressStep(0);
+    setMap(null);
+    setLoading(true);
+    setRetryNonce((n) => n + 1);
+  }
 
   function changeLanguage(next: string) {
     if (next === language) return;
@@ -207,12 +216,20 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
 
   if (error) {
     return (
-      <div className="text-center py-20 space-y-4">
-        <div className="text-4xl">&#x26A0;&#xFE0F;</div>
+      <div className="text-center py-20 space-y-5">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="mx-auto text-amber-500">
+          <path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
         <p className="text-red-600 dark:text-red-400 font-medium" role="alert">{error}</p>
-        <button onClick={() => router.push("/")} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 underline text-sm">
-          Upload a different document
-        </button>
+        <div className="flex items-center justify-center gap-3">
+          <button onClick={retryAnalysis} className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+            Try again
+          </button>
+          <button onClick={() => router.push("/")} className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+            Upload a different document
+          </button>
+        </div>
       </div>
     );
   }
@@ -279,11 +296,11 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Clauses Found" value={totalClauses} icon="📋" />
-        <StatCard label="Categories" value={grouped.length} icon="📂" />
-        <StatCard label="Citations Verified" value={verifiedCount} icon="✓" color="text-emerald-600 dark:text-emerald-400" />
-        {highRisk > 0 && <StatCard label="High Risk Items" value={highRisk} icon="⚠️" color="text-red-600 dark:text-red-400" />}
-        {highRisk === 0 && <StatCard label="Unverified Quotes" value={unverifiedCount} icon="?" color="text-amber-600 dark:text-amber-400" />}
+        <StatCard label="Clauses Found" value={totalClauses} />
+        <StatCard label="Categories" value={grouped.length} />
+        <StatCard label="Citations Verified" value={verifiedCount} color="text-emerald-600 dark:text-emerald-400" />
+        {highRisk > 0 && <StatCard label="High Risk Items" value={highRisk} color="text-red-600 dark:text-red-400" />}
+        {highRisk === 0 && <StatCard label="Unverified Quotes" value={unverifiedCount} color="text-amber-600 dark:text-amber-400" />}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -296,7 +313,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
                 id={`heading-${group.category}`}
                 className={`font-medium text-sm uppercase tracking-wide flex items-center gap-1.5 ${group.text}`}
               >
-                <span aria-hidden="true">{group.icon}</span> {group.label}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">{group.icon}</svg> {group.label}
                 <span className="text-xs font-normal normal-case text-faint">({group.claims.length})</span>
               </h3>
               <div className="space-y-2">
@@ -315,7 +332,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
 
           <section aria-labelledby="lawyer-heading" className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
             <h3 id="lawyer-heading" className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3 flex items-center gap-2">
-              <span aria-hidden="true">📝</span> Questions to Ask Your Lawyer
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16 3l5 5-9.5 9.5-5.5 1.5 1.5-5.5L16 3z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg> Questions to Ask Your Lawyer
             </h3>
             <ol className="list-decimal list-inside space-y-2 text-sm text-indigo-800 dark:text-indigo-300">
               {map.questionsForLawyer.map((q) => (
@@ -337,7 +354,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
               <div className="bg-surface border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4 shadow-sm" aria-live="polite">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-sm flex items-center gap-1.5">
-                    <span aria-hidden="true">📖</span> Source · Page {selectedSpan.page}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v16H6a2 2 0 00-2 2V5zM20 5a2 2 0 00-2-2h-5v16h5a2 2 0 012 2V5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /></svg> Source &middot; Page {selectedSpan.page}
                   </h3>
                   <button
                     onClick={() => setSelectedSpan(null)}
@@ -363,7 +380,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
 
           <div className="bg-surface border border-border-custom rounded-xl p-4 shadow-sm">
             <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
-              <span aria-hidden="true">💬</span> Ask About This Document
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H9l-4 4V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg> Ask About This Document
             </h3>
             <div className="space-y-3">
               {!answer && !asking && (
@@ -421,13 +438,10 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
   );
 }
 
-function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color?: string }) {
+function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
     <div className="bg-surface border border-border-custom rounded-lg p-3 text-center">
-      <div className={`text-2xl font-bold ${color ?? "text-foreground"}`}>
-        <span aria-hidden="true" className="text-sm mr-1">{icon}</span>
-        {value}
-      </div>
+      <div className={`text-2xl font-bold font-serif ${color ?? "text-foreground"}`}>{value}</div>
       <div className="text-xs text-muted mt-0.5">{label}</div>
     </div>
   );
@@ -462,15 +476,17 @@ const ClaimCard = memo(function ClaimCard({
           <button
             key={span.id}
             onClick={() => onSelectSpan(span)}
-            className="text-xs bg-surface/80 border border-border-custom rounded-md px-2 py-0.5 hover:bg-surface hover:shadow-sm transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-xs bg-surface/80 border border-border-custom rounded-md px-2 py-0.5 hover:bg-surface hover:shadow-sm transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 inline-flex items-center gap-1 text-gold"
             aria-label={`View source: page ${span.page}`}
           >
-            📖 p.{span.page}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v16H6a2 2 0 00-2 2V5zM20 5a2 2 0 00-2-2h-5v16h5a2 2 0 012 2V5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>
+            <span className="text-foreground">p.{span.page}</span>
           </button>
         ))}
         {claim.unverifiedQuotes.length > 0 && (
-          <span className="text-xs text-faint italic flex items-center gap-1" title="These quotes could not be exactly matched to the document text">
-            <span aria-hidden="true">⚠</span> {claim.unverifiedQuotes.length} unverified
+          <span className="text-xs text-faint italic inline-flex items-center gap-1" title="These quotes could not be exactly matched to the document text">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            {claim.unverifiedQuotes.length} unverified
           </span>
         )}
       </div>

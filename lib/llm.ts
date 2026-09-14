@@ -28,6 +28,26 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+/** Gemini Flash occasionally returns 503 "high demand" or 429 during spikes — retry those transparently. */
+function isTransient(e: unknown): boolean {
+  const msg = String((e as Error)?.message ?? e);
+  return /\b(429|500|502|503|504)\b|overloaded|unavailable|high demand|rate limit|timed out/i.test(msg);
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (!isTransient(e) || i === attempts - 1) throw e;
+      await new Promise((r) => setTimeout(r, 500 * 2 ** i)); // 0.5s, 1s
+    }
+  }
+  throw lastErr;
+}
+
 /** Send a prompt to Gemini and parse the JSON response. Throws on timeout or malformed output. */
 export async function generateStructured<T>(
   prompt: string,
@@ -38,15 +58,17 @@ export async function generateStructured<T>(
     model: MODEL,
     systemInstruction: SYSTEM_INSTRUCTION,
   });
-  const result = await withTimeout(
-    model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        ...generationConfig,
-        responseMimeType: "application/json",
-      },
-    }),
-    TIMEOUT_MS
+  const result = await withRetry(() =>
+    withTimeout(
+      model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          ...generationConfig,
+          responseMimeType: "application/json",
+        },
+      }),
+      TIMEOUT_MS
+    )
   );
   const text = result.response.text();
   try {
@@ -65,11 +87,13 @@ export async function* generateStream(
     model: MODEL,
     systemInstruction: SYSTEM_INSTRUCTION,
   });
-  const result = await withTimeout(
-    model.generateContentStream({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    }),
-    TIMEOUT_MS
+  const result = await withRetry(() =>
+    withTimeout(
+      model.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      }),
+      TIMEOUT_MS
+    )
   );
   for await (const chunk of result.stream) {
     const text = chunk.text();
