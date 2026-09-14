@@ -442,16 +442,63 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
                 <div
                   ref={answerRef}
                   lang={LANG_CODE[language] ?? "en"}
-                  className="bg-surface-alt border border-border-custom rounded-lg p-3 text-sm whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed"
+                  className="bg-surface-alt border border-border-custom rounded-lg p-3 text-sm max-h-80 overflow-y-auto leading-relaxed"
                   aria-live="polite"
                 >
-                  {answer}
+                  <FormattedAnswer text={answer} />
                 </div>
               )}
             </div>
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+// Render inline **bold** and [Quote: "..."] from the model's markdown-ish answer (React escapes all text — no XSS).
+function renderInline(s: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const re = /\*\*(.+?)\*\*|\[Quote:\s*"([^"]*)"\]/g;
+  let last = 0;
+  let k = 0;
+  for (let m = re.exec(s); m !== null; m = re.exec(s)) {
+    if (m.index > last) nodes.push(s.slice(last, m.index));
+    if (m[1] !== undefined) {
+      nodes.push(<strong key={k++}>{m[1]}</strong>);
+    } else if (m[2] !== undefined) {
+      nodes.push(
+        <span key={k++} className="italic text-muted">&ldquo;{m[2]}&rdquo;</span>
+      );
+    }
+    last = re.lastIndex;
+  }
+  if (last < s.length) nodes.push(s.slice(last));
+  return nodes;
+}
+
+/** Lightweight renderer for the grounded Q&A answer — turns the model's headings, bullets, bold, and inline quotes into clean markup. */
+function FormattedAnswer({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1.5">
+      {lines.map((raw, i) => {
+        const t = raw.trim();
+        if (!t) return null;
+        if (t === "---") return <hr key={i} className="border-border-custom my-1" />;
+        if (t.startsWith("### ")) return <p key={i} className="font-semibold mt-2">{renderInline(t.slice(4))}</p>;
+        if (t.startsWith("## ")) return <p key={i} className="font-semibold mt-2">{renderInline(t.slice(3))}</p>;
+        if (t.startsWith("# ")) return <p key={i} className="font-semibold mt-2">{renderInline(t.slice(2))}</p>;
+        if (t.startsWith("* ") || t.startsWith("- ")) {
+          return (
+            <div key={i} className="flex gap-1.5 pl-1">
+              <span className="text-gold shrink-0" aria-hidden="true">&bull;</span>
+              <span>{renderInline(t.slice(2))}</span>
+            </div>
+          );
+        }
+        return <p key={i}>{renderInline(t)}</p>;
+      })}
     </div>
   );
 }
