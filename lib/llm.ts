@@ -56,7 +56,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 /** Gemini Flash occasionally returns 503 "high demand" or 429 during spikes — retry those transparently. */
 function isTransient(e: unknown): boolean {
   const msg = String((e as Error)?.message ?? e);
-  return /\b(429|500|502|503|504)\b|overloaded|unavailable|high demand|rate limit|timed out/i.test(msg);
+  // Gemini occasionally returns truncated/invalid JSON; a re-request usually fixes it.
+  return /\b(429|500|502|503|504)\b|overloaded|unavailable|high demand|rate limit|timed out|malformed json/i.test(msg);
 }
 
 async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
@@ -132,14 +133,15 @@ export async function generateStructured<T>(
   prompt: string,
   generationConfig: GenerationConfig
 ): Promise<T> {
-  const text = await withRetry(() =>
-    withTimeout(runOnce([{ text: prompt }], true, generationConfig.temperature), TIMEOUT_MS)
-  );
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    throw new Error("AI returned malformed JSON — retry the request");
-  }
+  // Parse inside the retry so a malformed-JSON response re-requests the model (not just network errors).
+  return withRetry(async () => {
+    const text = await withTimeout(runOnce([{ text: prompt }], true, generationConfig.temperature), TIMEOUT_MS);
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error("AI returned malformed JSON — retrying");
+    }
+  });
 }
 
 /** Stream text from Gemini token-by-token. Used for grounded Q&A. */
