@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-alt: #eef2f7;
+  --border: #d8e0ea;
+  --muted: #475569;
+  --faint: #64748b;
+  /* Trust-gold accent — used for the primary CTA and brand marks (navy + gold authority palette) */
+  --accent: #b45309;
+  --accent-hover: #92400e;
+  --gold-text: #b45309;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b1220;
+    --foreground: #f1f5f9;
+    --surface: #131f34;
+    --surface-alt: #1c2b45;
+    --border: #29405f;
+    --muted: #a3b2c7;
+    --faint: #7688a1;
+    --accent: #c2610a;
+    --accent-hover: #d97316;
+    --gold-text: #fbbf24;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border-custom: var(--border);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-gold: var(--gold-text);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-heading);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1,
+h2,
+.font-serif {
+  font-family: var(--font-heading), Georgia, "Times New Roman", serif;
+}
+
+.accent-cta {
+  background: var(--accent);
+  color: #ffffff;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.accent-cta:hover {
+  background: var(--accent-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
