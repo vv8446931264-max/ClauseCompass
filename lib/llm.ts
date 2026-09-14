@@ -1,14 +1,17 @@
 import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import { VertexAI } from "@google-cloud/vertexai";
 
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const TIMEOUT_MS = 60_000;
 
 // Backend selection: Vertex AI (Application Default Credentials — no key in env) when a
-// project is configured; otherwise the AI Studio API key. Same model, same prompts.
+// project is configured; otherwise the AI Studio API key. Same prompts, same pipeline.
 const VERTEX_PROJECT = process.env.VERTEX_PROJECT;
 const VERTEX_LOCATION = process.env.VERTEX_LOCATION ?? "us-central1";
 const useVertex = !!VERTEX_PROJECT;
+
+// The two backends publish Gemini Flash under different IDs, so the default is backend-aware
+// (GEMINI_MODEL overrides both). Vertex → gemini-2.5-flash; AI Studio → gemini-3.6-flash.
+const MODEL = process.env.GEMINI_MODEL ?? (useVertex ? "gemini-2.5-flash" : "gemini-3.6-flash");
 
 const SYSTEM_INSTRUCTION = [
   "You are a legal document analyst. You help users understand legal documents.",

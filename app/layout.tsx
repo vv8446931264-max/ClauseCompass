@@ -5,17 +5,18 @@ import { NavLinks } from "./nav-links";
 import "./globals.css";
 
 // Serif headings signal legal authority; humanist sans keeps body text highly readable.
+// @perf-audit: load only the weights actually used (headings 600/700, body 400/700)
 const heading = EB_Garamond({
   variable: "--font-heading",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["600", "700"],
   display: "swap",
 });
 
 const body = Lato({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["300", "400", "700"],
+  weight: ["400", "700"],
   display: "swap",
 });
 

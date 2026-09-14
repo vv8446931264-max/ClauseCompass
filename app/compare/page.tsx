@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type FormEvent, type DragEvent } from "react";
+import { useState, useRef, memo, type FormEvent, type DragEvent } from "react";
 import type { ValidatedCompareResult, ValidatedClaim } from "@/lib/schemas";
 
 export default function ComparePage() {
@@ -258,7 +258,7 @@ function Section({ title, color, children }: { title: string; color: string; chi
   );
 }
 
-function VerificationBadge({ claim }: { claim: ValidatedClaim }) {
+const VerificationBadge = memo(function VerificationBadge({ claim }: { claim: ValidatedClaim }) {
   const verified = claim.sourceSpans.length;
   const unverified = claim.unverifiedQuotes.length;
   if (verified === 0 && unverified === 0) return null;
@@ -268,9 +268,9 @@ function VerificationBadge({ claim }: { claim: ValidatedClaim }) {
       {unverified > 0 && <span className="text-faint">⚠ {unverified} unverified</span>}
     </div>
   );
-}
+});
 
-function ClaimLine({ claim }: { claim: ValidatedClaim }) {
+const ClaimLine = memo(function ClaimLine({ claim }: { claim: ValidatedClaim }) {
   return (
     <div className="bg-surface border border-border-custom rounded-lg p-3 text-sm">
       <p>{claim.text}</p>
@@ -280,4 +280,4 @@ function ClaimLine({ claim }: { claim: ValidatedClaim }) {
       </div>
     </div>
   );
-}
+});

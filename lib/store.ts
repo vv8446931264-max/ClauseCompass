@@ -24,8 +24,8 @@ if (typeof setInterval !== "undefined") {
 }
 
 export function setDoc(doc: ExtractedDoc): void {
-  purgeExpired();
-  // @architecture-audit: Map preserves insertion order, so the first key is the oldest
+  // @perf-audit: O(1) write — the interval sweep handles bulk expiry; here we only
+  // evict the single oldest entry if we're at the cap (Map preserves insertion order).
   if (store.size >= MAX_STORE_SIZE) {
     const oldest = store.keys().next().value;
     if (oldest) store.delete(oldest);
