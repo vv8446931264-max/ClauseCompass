@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pdfjs-dist", "@google-cloud/vertexai"],
   compress: true,
   poweredByHeader: false,
+  // @perf-audit: serve AVIF (then WebP) via the next/image optimizer for smaller payloads
+  images: { formats: ["image/avif", "image/webp"] },
   headers: async () => [
     {
       // @perf-audit: content-stable brand images — cache hard so they're fetched once

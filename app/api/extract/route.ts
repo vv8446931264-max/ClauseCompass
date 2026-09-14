@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuid } from "uuid";
 import { extractPdfPages, extractTextPages } from "@/lib/extract";
 import { transcribeImage } from "@/lib/llm";
 import { MAX_FILE_SIZE, MAX_PAGES, ALLOWED_TYPES, IMAGE_TYPES } from "@/lib/schemas";
@@ -58,7 +57,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const id = uuid();
+    const id = crypto.randomUUID();
     let pages;
 
     if (file && file.type === "application/pdf") {

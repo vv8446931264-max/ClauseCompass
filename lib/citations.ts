@@ -1,5 +1,4 @@
 import type { SourceSpan, Page } from "./schemas";
-import { v4 as uuid } from "uuid";
 
 /** NFKC-normalize, fold smart quotes/dashes, collapse whitespace for fuzzy string matching. */
 function normalize(s: string): string {
@@ -44,7 +43,7 @@ export function validateQuote(
     const at = page.text.indexOf(normalizedQuote);
     if (at !== -1) {
       return {
-        id: uuid(),
+        id: crypto.randomUUID(),
         docId,
         page: page.n,
         quote: quote.trim(),
@@ -58,7 +57,7 @@ export function validateQuote(
     const at = idx.full.indexOf(normalizedQuote);
     if (at !== -1) {
       return {
-        id: uuid(),
+        id: crypto.randomUUID(),
         docId,
         page: pages[0]!.n,
         quote: quote.trim(),
