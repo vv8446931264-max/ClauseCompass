@@ -100,3 +100,32 @@ export async function* generateStream(
     if (text) yield text;
   }
 }
+
+/**
+ * Transcribe a photographed or scanned legal document (image) to plain text via
+ * Gemini vision. Enables the "photograph your contract" access flow — the OCR
+ * output then feeds the same citation-validated pipeline as typed/PDF text.
+ */
+export async function transcribeImage(base64: string, mimeType: string): Promise<string> {
+  const client = getClient();
+  const model = client.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: SYSTEM_INSTRUCTION,
+  });
+  const prompt =
+    "Transcribe ALL text from this legal document image exactly as written — preserve headings, clause numbering, dates, amounts, and line structure. Output only the transcribed text with no commentary, summary, or added words.";
+  const result = await withRetry(() =>
+    withTimeout(
+      model.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }, { inlineData: { mimeType, data: base64 } }],
+          },
+        ],
+      }),
+      TIMEOUT_MS
+    )
+  );
+  return result.response.text();
+}

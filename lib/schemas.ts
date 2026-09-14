@@ -131,4 +131,9 @@ export interface ValidatedCompareResult {
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 export const MAX_PAGES = 100;
-export const ALLOWED_TYPES = ["application/pdf", "text/plain"] as const;
+export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const ALLOWED_TYPES = [
+  "application/pdf",
+  "text/plain",
+  ...IMAGE_TYPES,
+] as const;

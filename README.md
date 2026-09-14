@@ -12,6 +12,7 @@
 | Answering questions from documents | Grounded Q&A with streaming — answers only from the document |
 | Helping users prepare for a lawyer | Auto-generated neutral questions for attorney consultations |
 | **Access for non-English speakers** | **Analysis, risk explanations, and Q&A in 7 languages (Hindi, Bengali, Tamil, Telugu, Marathi, Spanish, English) — while source citations stay verbatim so verification never breaks** |
+| **Access without a digital copy** | **Photograph or scan a paper contract — Gemini vision OCR transcribes it into the same citation-validated pipeline** |
 
 ## Evaluation Criteria Alignment
 
@@ -20,7 +21,7 @@
 | **Code Quality** | TypeScript strict mode, ESLint zero-warning, Zod validation at every I/O boundary, modular single-responsibility lib files, JSDoc on all public APIs |
 | **Security** | Server-only API keys, CSP without `unsafe-eval`, rate limiting with secure IP parsing (last hop, not spoofable first), upload validation (type/size/page limits), prompt injection defense, non-root Docker container, gitleaks in CI |
 | **Efficiency** | Gemini Flash with 1M-token context (no RAG/vector DB needed), in-memory store with 30-min TTL and periodic garbage collection, Next.js standalone build for minimal container size, parallel document uploads in compare view |
-| **Testing** | 44 Vitest unit tests across 4 suites covering citation validation, schema boundaries, rate limiting, and document storage. CI runs lint + typecheck + test + build + secret scanning on every push |
+| **Testing** | 71 Vitest tests across 8 suites — citation validation, schema boundaries, rate limiting, document storage, risk scoring, and **API-route integration tests** (extract validation + vision path, analyze citation-verification and caching). CI runs lint + typecheck + test + build + secret scanning on every push |
 | **Accessibility** | Semantic HTML5 (`<main>`, `<section>`, `<nav>`), ARIA attributes (`aria-live`, `aria-selected`, `role="tablist"`), keyboard-navigable with visible focus rings, dark mode via `prefers-color-scheme`, `prefers-reduced-motion` support, skip-to-content link |
 | **Problem Statement Alignment** | Directly addresses 6 of the listed use cases for "AI for Legal Assistance & **Access**": simplifying legal documents, comparing contracts, highlighting obligations/risks, answering questions from documents, preparing users for attorney consultations, and **multilingual access** so non-English speakers can understand what they are signing. Every AI output is grounded via deterministic citation validation |
 
@@ -65,7 +66,7 @@ graph TB
   Analyze --> Session --> Store
 ```
 
-Every AI output (`analyze`, `compare`) passes `citations.ts` before rendering — no claim reaches the UI without an exact quote match back into the source. `lib/` also holds `schemas.ts` (Zod, single source of truth), `extract.ts` (pdfjs-dist), `risk.ts` (risk score), and `ratelimit.ts` (per-IP token bucket). Tests: 59 across 6 Vitest suites.
+Every AI output (`analyze`, `compare`) passes `citations.ts` before rendering — no claim reaches the UI without an exact quote match back into the source. `lib/` also holds `schemas.ts` (Zod, single source of truth), `extract.ts` (pdfjs-dist), `risk.ts` (risk score), and `ratelimit.ts` (per-IP token bucket). Tests: 71 across 8 Vitest suites, including API-route tests.
 
 **Key decisions:**
 - **No database** — documents live in memory with a 30-minute TTL and periodic cleanup. Privacy by design, not a limitation.
@@ -87,13 +88,13 @@ npm run dev
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # TypeScript strict mode
-npm test            # 44 Vitest unit tests
+npm test            # 71 Vitest tests
 npm run build       # Production build
 ```
 
 ## Testing
 
-59 tests across 6 files:
+71 tests across 8 files:
 
 | Suite | Tests | Covers |
 |---|---|---|
@@ -103,6 +104,8 @@ npm run build       # Production build
 | `store.test.ts` | 9 | Document CRUD, decision map storage, TTL expiry, nonexistent doc handling, overwrite behavior, no-op on missing doc |
 | `extract.test.ts` | 5 | Text extraction, whitespace preservation, empty input, large input, unicode content |
 | `risk.test.ts` | 5 | Risk scoring — empty, high-severity weighting, cap at 10, low-risk clean doc, unverified-citation penalty |
+| `api/extract.test.ts` | 6 | Upload validation (missing input, oversized text, too-short, bad type) and the image→vision-OCR path |
+| `api/analyze.test.ts` | 4 | Invalid body, unknown doc, real-vs-fabricated citation verification, decision-map caching |
 
 CI runs lint + typecheck + test + build + gitleaks on every push.
 
@@ -136,16 +139,15 @@ CI runs lint + typecheck + test + build + gitleaks on every push.
 3. Two-document clause comparison with citation validation
 4. Neutral lawyer-question generation
 5. Multilingual output (7 languages) for the Decision Map and Q&A — explanations are translated while source quotes stay verbatim
+6. Vision OCR — transcribe a photographed or scanned contract (image) into text for the same citation-validated pipeline
 
 All model output passes the citation validator before rendering.
 
 ## Limitations
 
-- PDF and plain text only (no DOCX, images, or scanned documents)
+- PDF, plain text, and images/photos (PNG/JPG/WebP via Gemini vision OCR); no DOCX yet
 - In-memory store — documents lost on server restart
-- English only
-- No OCR for scanned PDFs
-- Max 100 pages per document
+- Max 100 pages per document (single image per upload)
 
 ## License
 

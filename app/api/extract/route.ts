@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 import { extractPdfPages, extractTextPages } from "@/lib/extract";
-import { MAX_FILE_SIZE, MAX_PAGES, ALLOWED_TYPES } from "@/lib/schemas";
+import { transcribeImage } from "@/lib/llm";
+import { MAX_FILE_SIZE, MAX_PAGES, ALLOWED_TYPES, IMAGE_TYPES } from "@/lib/schemas";
 import * as store from "@/lib/store";
 import { checkRateLimit, parseClientIp } from "@/lib/ratelimit";
 
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest) {
     if (file && file.type === "application/pdf") {
       const buffer = await file.arrayBuffer();
       pages = await extractPdfPages(buffer);
+    } else if (file && IMAGE_TYPES.includes(file.type as (typeof IMAGE_TYPES)[number])) {
+      // Photograph / scan of a legal document → Gemini vision OCR → same pipeline
+      const buffer = await file.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+      const text = await transcribeImage(base64, file.type);
+      pages = extractTextPages(text);
     } else {
       const text = pastedText ?? (await file!.text());
       pages = extractTextPages(text);

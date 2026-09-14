@@ -221,10 +221,10 @@ export default function UploadPage() {
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.txt,application/pdf,text/plain"
+              accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,image/png,image/jpeg,image/webp"
               className="hidden"
               id="file-upload"
-              aria-label="Upload legal document"
+              aria-label="Upload or photograph a legal document"
               onChange={handleFileChange}
             />
             <label
@@ -248,11 +248,11 @@ export default function UploadPage() {
                     <path d="M12 18v-6M9.5 14.5L12 12l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <span className="text-sm text-muted block">
-                    Drop a PDF or text file here, or{" "}
+                    Drop a PDF, photo, or text file here, or{" "}
                     <span className="text-blue-600 dark:text-blue-400 underline">browse</span>
                   </span>
                   <span className="text-xs text-faint block">
-                    PDF or plain text · Max 10 MB · Max 100 pages
+                    PDF · photo/scan of a contract · plain text &middot; Max 10 MB
                   </span>
                 </>
               )}
