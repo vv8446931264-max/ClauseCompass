@@ -2,6 +2,7 @@
 
 import { useState, useRef, type FormEvent, type DragEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const SAMPLE_TEXT = `RESIDENTIAL LEASE AGREEMENT
 
@@ -158,14 +159,13 @@ export default function UploadPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       <figure className="rounded-2xl overflow-hidden border border-border-custom shadow-sm">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/images/hero.webp"
           alt="ClauseCompass — navigate legal documents with AI-verified citations"
           width={1500}
           height={789}
-          decoding="async"
-          fetchPriority="high"
+          priority
+          sizes="(max-width: 768px) 100vw, 672px"
           className="w-full h-auto block"
         />
       </figure>
@@ -362,16 +362,14 @@ function AccessBand() {
           cited source quotes stay verbatim, so verification never breaks.
         </p>
       </div>
-      <div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative min-h-[200px]">
+        <Image
           src="/images/access.webp"
           alt="Legal understanding in multiple languages"
-          width={1400}
-          height={788}
+          fill
           loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover"
+          sizes="(max-width: 768px) 100vw, 336px"
+          className="object-cover"
         />
       </div>
     </section>
@@ -448,15 +446,14 @@ function ShowcaseSection() {
       <div className="grid sm:grid-cols-3 gap-3">
         {SHOWCASE.map((s) => (
           <figure key={s.src} className="rounded-xl overflow-hidden border border-border-custom shadow-sm">
-            {/* @perf-audit: explicit dimensions reserve space (CLS 0) + lazy-load below the fold */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            {/* @perf-audit: next/image → responsive srcset, modern formats, lazy-load, CLS 0 */}
+            <Image
               src={s.src}
               alt={s.alt}
               width={1400}
               height={788}
               loading="lazy"
-              decoding="async"
+              sizes="(max-width: 640px) 100vw, 224px"
               className="w-full h-auto block"
             />
             <figcaption className="text-xs text-muted text-center py-2 bg-surface-alt">{s.caption}</figcaption>

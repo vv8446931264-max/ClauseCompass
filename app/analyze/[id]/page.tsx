@@ -503,14 +503,15 @@ function FormattedAnswer({ text }: { text: string }) {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
+// @perf-audit: memoized so Q&A stream ticks don't re-render the stat tiles
+const StatCard = memo(function StatCard({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
     <div className="bg-surface border border-border-custom rounded-lg p-3 text-center">
       <div className={`text-2xl font-bold font-serif ${color ?? "text-foreground"}`}>{value}</div>
       <div className="text-xs text-muted mt-0.5">{label}</div>
     </div>
   );
-}
+});
 
 // @perf-audit: memoized so streaming Q&A state changes don't re-render every clause card
 const ClaimCard = memo(function ClaimCard({

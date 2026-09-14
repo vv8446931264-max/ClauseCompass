@@ -42,12 +42,12 @@ function vertex(): VertexAI {
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("AI request timed out")), ms)
-    ),
-  ]);
+  // @perf-audit: clear the timer once the race settles so no setTimeout dangles after success
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("AI request timed out")), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 /** Gemini Flash occasionally returns 503 "high demand" or 429 during spikes — retry those transparently. */

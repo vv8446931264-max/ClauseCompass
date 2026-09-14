@@ -34,15 +34,17 @@ export async function POST(req: NextRequest) {
 
   const language = parsed.data.language ?? "English";
 
-  const prompt = `You are answering a question about a legal document. Answer ONLY based on the document content below. If the answer cannot be found in the document, say: "I can't verify that from this document."
+  // @perf-audit: the document (largest, stable-per-doc block) leads the prompt so Gemini 2.5's
+  // implicit context caching reuses it across every question/language — only the tail varies.
+  const prompt = `<document>
+${doc.pages.map((p) => `--- Page ${p.n} ---\n${p.text}`).join("\n\n")}
+</document>
+
+You are answering a question about the legal document above. Answer ONLY from its content. If the answer cannot be found in the document, say: "I can't verify that from this document."
 
 Write your answer in ${language}. For every factual claim, cite the exact quote from the document in [Quote: "..."] format — keep the quoted text in the document's ORIGINAL language, do not translate quotes.
 
 End every response with this exact sentence in ${language}: "This is information only, not legal advice. Consult a licensed legal professional for guidance specific to your situation."
-
-<document>
-${doc.pages.map((p) => `--- Page ${p.n} ---\n${p.text}`).join("\n\n")}
-</document>
 
 Question: ${parsed.data.question}`;
 
