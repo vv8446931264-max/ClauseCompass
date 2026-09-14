@@ -5,9 +5,9 @@
   --foreground: #0f172a;
   --surface: #ffffff;
   --surface-alt: #eef2f7;
-  --border: #d8e0ea;
+  --border: #cbd5e1;
   --muted: #475569;
-  --faint: #64748b;
+  --faint: #5b6675; /* AA: ≥4.5:1 on the light background */
   /* Trust-gold accent — used for the primary CTA and brand marks (navy + gold authority palette) */
   --accent: #b45309;
   --accent-hover: #92400e;

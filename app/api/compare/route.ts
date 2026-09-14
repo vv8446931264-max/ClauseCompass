@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const cachedCompare = store.getCompare(doc1.id, doc2.id);
+  if (cachedCompare) return NextResponse.json(cachedCompare);
+
   const safeName = (s: string) => s.replace(/[^a-zA-Z0-9 ._-]/g, "").slice(0, 100);
 
   const prompt = `Compare these two legal documents and identify clause-level changes.
@@ -93,6 +96,7 @@ Each clause has: "text" (plain language), "category" (obligation|right|key_date|
       unchanged: parseResult.data.unchanged.map((c) => validateClaim(c, doc1.id, doc1.pages)),
     };
 
+    store.setCompare(doc1.id, doc2.id, validated);
     return NextResponse.json(validated);
   } catch (e) {
     console.error("Compare failed:", e);

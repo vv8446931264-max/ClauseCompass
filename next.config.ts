@@ -3,7 +3,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["pdfjs-dist"],
+  compress: true,
+  poweredByHeader: false,
   headers: async () => [
+    {
+      // @perf-audit: content-stable brand images — cache hard so they're fetched once
+      source: "/images/:path*",
+      headers: [
+        { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+      ],
+    },
     {
       source: "/(.*)",
       headers: [

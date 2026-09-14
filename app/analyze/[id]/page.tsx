@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, use, useCallback, memo } from "react";
+import { useEffect, useState, useRef, use, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import type { ValidatedDecisionMap, ValidatedClaim, SourceSpan } from "@/lib/schemas";
 import { SUPPORTED_LANGUAGES } from "@/lib/schemas";
@@ -19,6 +19,17 @@ const SEVERITY_STYLE: Record<string, { bg: string; text: string; label: string }
   high: { bg: "bg-red-100 dark:bg-red-900/40", text: "text-red-700 dark:text-red-300", label: "High Risk" },
   medium: { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-700 dark:text-amber-300", label: "Medium" },
   low: { bg: "bg-emerald-100 dark:bg-emerald-900/40", text: "text-emerald-700 dark:text-emerald-300", label: "Low" },
+};
+
+// BCP-47 codes so screen readers pronounce translated output correctly (WCAG 3.1.2 Language of Parts).
+const LANG_CODE: Record<string, string> = {
+  English: "en",
+  "हिन्दी (Hindi)": "hi",
+  "বাংলা (Bengali)": "bn",
+  "தமிழ் (Tamil)": "ta",
+  "తెలుగు (Telugu)": "te",
+  "मराठी (Marathi)": "mr",
+  "Español (Spanish)": "es",
 };
 
 const SUGGESTED_QUESTIONS = [
@@ -186,6 +197,22 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  // @perf-audit: derive the Decision-Map view once per analysis, not on every Q&A stream tick
+  const derived = useMemo(() => {
+    if (!map) return null;
+    const grouped = Object.entries(CATEGORY_META)
+      .map(([cat, meta]) => ({ ...meta, category: cat, claims: map.claims.filter((c) => c.category === cat) }))
+      .filter((g) => g.claims.length > 0);
+    return {
+      grouped,
+      highRisk: map.claims.filter((c) => c.severity === "high").length,
+      totalClauses: map.claims.length,
+      verifiedCount: map.claims.reduce((acc, c) => acc + c.sourceSpans.length, 0),
+      unverifiedCount: map.claims.reduce((acc, c) => acc + c.unverifiedQuotes.length, 0),
+      risk: riskScore(map.claims),
+    };
+  }, [map]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-6" aria-busy="true">
@@ -234,19 +261,9 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  if (!map) return null;
+  if (!map || !derived) return null;
 
-  const grouped = Object.entries(CATEGORY_META).map(([cat, meta]) => ({
-    ...meta,
-    category: cat,
-    claims: map.claims.filter((c) => c.category === cat),
-  })).filter((g) => g.claims.length > 0);
-
-  const highRisk = map.claims.filter((c) => c.severity === "high").length;
-  const totalClauses = map.claims.length;
-  const verifiedCount = map.claims.reduce((acc, c) => acc + c.sourceSpans.length, 0);
-  const unverifiedCount = map.claims.reduce((acc, c) => acc + c.unverifiedQuotes.length, 0);
-  const risk = riskScore(map.claims);
+  const { grouped, highRisk, totalClauses, verifiedCount, unverifiedCount, risk } = derived;
   const RISK_STYLE = {
     high: { ring: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800", label: "High Risk" },
     medium: { ring: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800", label: "Medium Risk" },
@@ -256,7 +273,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1" lang={LANG_CODE[language] ?? "en"}>
           <h1 className="text-2xl font-bold tracking-tight">{map.title}</h1>
           <p className="text-muted">{map.summary}</p>
         </div>
@@ -304,7 +321,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-5" lang={LANG_CODE[language] ?? "en"}>
           <h2 className="text-lg font-semibold">Decision Map</h2>
 
           {grouped.map((group) => (
@@ -424,6 +441,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
               {answer && (
                 <div
                   ref={answerRef}
+                  lang={LANG_CODE[language] ?? "en"}
                   className="bg-surface-alt border border-border-custom rounded-lg p-3 text-sm whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed"
                   aria-live="polite"
                 >

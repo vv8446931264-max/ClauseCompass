@@ -1,4 +1,4 @@
-import type { ExtractedDoc, ValidatedDecisionMap } from "./schemas";
+import type { ExtractedDoc, ValidatedDecisionMap, ValidatedCompareResult } from "./schemas";
 
 interface DocSession {
   doc: ExtractedDoc;
@@ -56,5 +56,32 @@ export function getDecisionMap(
 }
 
 export function deleteDoc(id: string): boolean {
+  // Drop any cached comparison that referenced this doc on either side
+  for (const key of compareCache.keys()) {
+    if (key.startsWith(`${id}:`) || key.endsWith(`:${id}`)) compareCache.delete(key);
+  }
   return store.delete(id);
+}
+
+// @perf-audit: cache two-document comparisons so re-opening the same pair doesn't re-call Gemini
+const compareCache = new Map<string, ValidatedCompareResult>();
+const MAX_COMPARE_CACHE = 500;
+
+export function getCompare(
+  docId1: string,
+  docId2: string
+): ValidatedCompareResult | undefined {
+  return compareCache.get(`${docId1}:${docId2}`);
+}
+
+export function setCompare(
+  docId1: string,
+  docId2: string,
+  result: ValidatedCompareResult
+): void {
+  if (compareCache.size >= MAX_COMPARE_CACHE) {
+    const oldest = compareCache.keys().next().value;
+    if (oldest) compareCache.delete(oldest);
+  }
+  compareCache.set(`${docId1}:${docId2}`, result);
 }

@@ -14,43 +14,56 @@ function normalize(s: string): string {
     .toLowerCase();
 }
 
+interface NormalizedIndex {
+  pages: { n: number; text: string }[];
+  full: string | null;
+}
+
+// @perf-audit: normalize each page (and the cross-page join) ONCE per document,
+// not once per quote — turns validation from O(quotes × pages) into O(pages + quotes).
+function buildIndex(pages: Page[]): NormalizedIndex {
+  return {
+    pages: pages.map((p) => ({ n: p.n, text: normalize(p.text) })),
+    full: pages.length > 1 ? normalize(pages.map((p) => p.text).join(" ")) : null,
+  };
+}
+
 /** Match a single quote against document pages. Returns a SourceSpan with page and character offsets, or null if unverifiable. */
 export function validateQuote(
   quote: string,
   docId: string,
   pages: Page[],
-  precomputedFull?: string | null
+  index?: NormalizedIndex
 ): SourceSpan | null {
   const normalizedQuote = normalize(quote);
   if (normalizedQuote.length < 5) return null;
 
-  for (const page of pages) {
-    const normalizedPage = normalize(page.text);
-    const idx = normalizedPage.indexOf(normalizedQuote);
-    if (idx !== -1) {
+  const idx = index ?? buildIndex(pages);
+
+  for (const page of idx.pages) {
+    const at = page.text.indexOf(normalizedQuote);
+    if (at !== -1) {
       return {
         id: uuid(),
         docId,
         page: page.n,
         quote: quote.trim(),
-        start: idx,
-        end: idx + normalizedQuote.length,
+        start: at,
+        end: at + normalizedQuote.length,
       };
     }
   }
 
-  if (pages.length > 1) {
-    const normalizedFull =
-      precomputedFull ?? normalize(pages.map((p) => p.text).join(" "));
-    const idx = normalizedFull.indexOf(normalizedQuote);
-    if (idx !== -1) {
+  if (idx.full) {
+    const at = idx.full.indexOf(normalizedQuote);
+    if (at !== -1) {
       return {
         id: uuid(),
         docId,
         page: pages[0]!.n,
         quote: quote.trim(),
-        start: idx,
-        end: idx + normalizedQuote.length,
+        start: at,
+        end: at + normalizedQuote.length,
       };
     }
   }
@@ -68,14 +81,10 @@ export function validateAllQuotes(
 ): { spans: SourceSpan[]; unverified: string[] } {
   const spans: SourceSpan[] = [];
   const unverified: string[] = [];
-  // ponytail: pre-compute once instead of per-quote in validateQuote
-  const normalizedFull =
-    pages.length > 1
-      ? normalize(pages.map((p) => p.text).join(" "))
-      : null;
+  const index = buildIndex(pages); // @perf-audit: computed once, reused for every quote
 
   for (const quote of quotes) {
-    const span = validateQuote(quote, docId, pages, normalizedFull);
+    const span = validateQuote(quote, docId, pages, index);
     if (span) {
       spans.push(span);
     } else {

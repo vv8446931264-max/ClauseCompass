@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { setDoc, getDoc, setDecisionMap, getDecisionMap, deleteDoc } from "@/lib/store";
-import type { ExtractedDoc, ValidatedDecisionMap } from "@/lib/schemas";
+import { setDoc, getDoc, setDecisionMap, getDecisionMap, deleteDoc, setCompare, getCompare } from "@/lib/store";
+import type { ExtractedDoc, ValidatedDecisionMap, ValidatedCompareResult } from "@/lib/schemas";
 
 function makeDoc(id: string): ExtractedDoc {
   return {
@@ -95,6 +95,22 @@ describe("store", () => {
     const doc2 = { ...makeDoc(id), filename: "updated.txt" };
     setDoc(doc2);
     expect(getDoc(id)?.filename).toBe("updated.txt");
+  });
+
+  it("caches and retrieves a comparison result by document pair", () => {
+    const empty: ValidatedCompareResult = { added: [], removed: [], changed: [], unchanged: [] };
+    setCompare("d1", "d2", empty);
+    expect(getCompare("d1", "d2")).toEqual(empty);
+    expect(getCompare("d2", "d1")).toBeUndefined(); // order-sensitive key
+  });
+
+  it("drops cached comparisons when the left doc is deleted", () => {
+    const empty: ValidatedCompareResult = { added: [], removed: [], changed: [], unchanged: [] };
+    const doc = makeDoc(`cmp-del-${Date.now()}`);
+    setDoc(doc);
+    setCompare(doc.id, "other", empty);
+    deleteDoc(doc.id);
+    expect(getCompare(doc.id, "other")).toBeUndefined();
   });
 
   it("evicts oldest entries past the size cap", () => {
