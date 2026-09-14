@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import { VertexAI } from "@google-cloud/vertexai";
 
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const TIMEOUT_MS = 60_000;
 
 // Backend selection: Vertex AI (Application Default Credentials — no key in env) when a

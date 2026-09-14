@@ -111,7 +111,7 @@ CI runs lint + typecheck + test + build + gitleaks on every push.
 
 ## Security
 
-- **Server-only keys** — `GEMINI_API_KEY` in env, never in client code
+- **No API key in production** — Vertex AI is called with the Cloud Run service account's Application Default Credentials; no `GEMINI_API_KEY` is present in the deployed environment. (Local dev may use a server-only key.)
 - **CSP** — `script-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; no `unsafe-eval`
 - **X-Forwarded-For parsing** — takes the last (load-balancer-added) IP, not the first (client-spoofable)
 - **Rate limiting** — 20 req/min per IP with periodic bucket cleanup
@@ -132,7 +132,7 @@ CI runs lint + typecheck + test + build + gitleaks on every push.
 
 ## GenAI Services Disclosure
 
-**Google Gemini 3.6 Flash** via `@google/generative-ai`, server-side only:
+**Google Gemini 2.5 Flash** — via **Vertex AI** in production (the Cloud Run service account authenticates with Application Default Credentials, so no API key ships) and the AI Studio SDK (`@google/generative-ai`) for local development. Server-side only:
 
 1. Structured clause extraction and Decision Map generation
 2. Grounded document Q&A with streaming
