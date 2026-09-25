@@ -210,7 +210,7 @@ export function UploadForm() {
 
       {error && (
         <div role="alert" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
-          <span aria-hidden="true" className="shrink-0">&#x26A0;&#xFE0F;</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 mt-0.5"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
           <span>{error}</span>
         </div>
       )}
@@ -218,7 +218,7 @@ export function UploadForm() {
       <button
         type="submit"
         disabled={loading || (mode === "upload" ? !selectedFile : !pastedText.trim())}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="w-full accent-cta py-3 rounded-xl font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm hover:shadow-md transition-all"
       >
         {loading ? "Processing…" : "Analyze Document"}
       </button>

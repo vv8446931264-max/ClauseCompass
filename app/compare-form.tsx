@@ -187,7 +187,7 @@ export function CompareForm() {
         )}
 
         <button type="submit" disabled={loading} aria-busy={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+          className="w-full accent-cta py-3 rounded-xl font-semibold text-lg disabled:opacity-50 transition-all focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 cursor-pointer shadow-sm hover:shadow-md">
           {loading ? "Comparing…" : "Compare Documents"}
         </button>
       </form>
@@ -204,12 +204,12 @@ export function CompareForm() {
       </div>
 
       {result.changed.length > 0 && (
-        <Section title="🔄 Changed Clauses" color="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/20">
+        <Section title="Changed Clauses" icon={<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />} color="border-l-amber-500 border-amber-200/60 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/10" iconColor="text-amber-600 dark:text-amber-400">
           {result.changed.map((c) => (
-            <div key={c.explanation} className="border border-border-custom rounded-lg p-3 bg-surface space-y-2">
+            <div key={c.explanation} className="border-l-4 border-l-amber-400 border border-border-custom rounded-r-xl p-4 bg-surface space-y-2">
               <div className="grid md:grid-cols-2 gap-3 text-sm">
-                <div><span className="font-medium text-red-600 dark:text-red-400">Before:</span> {c.before.text}</div>
-                <div><span className="font-medium text-green-600 dark:text-green-400">After:</span> {c.after.text}</div>
+                <div><span className="font-semibold text-red-600 dark:text-red-400">Before:</span> {c.before.text}</div>
+                <div><span className="font-semibold text-emerald-600 dark:text-emerald-400">After:</span> {c.after.text}</div>
               </div>
               <p className="text-xs text-muted italic">{c.explanation}</p>
               <VerificationBadge claim={c.after} />
@@ -219,19 +219,19 @@ export function CompareForm() {
       )}
 
       {result.added.length > 0 && (
-        <Section title="➕ Added Clauses" color="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20">
+        <Section title="Added Clauses" icon={<path d="M12 4v16M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />} color="border-l-emerald-500 border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/60 dark:bg-emerald-950/10" iconColor="text-emerald-600 dark:text-emerald-400">
           {result.added.map((c) => <ClaimLine key={c.text} claim={c} />)}
         </Section>
       )}
 
       {result.removed.length > 0 && (
-        <Section title="➖ Removed Clauses" color="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20">
+        <Section title="Removed Clauses" icon={<path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />} color="border-l-red-500 border-red-200/60 dark:border-red-800/40 bg-red-50/60 dark:bg-red-950/10" iconColor="text-red-600 dark:text-red-400">
           {result.removed.map((c) => <ClaimLine key={c.text} claim={c} />)}
         </Section>
       )}
 
       {result.unchanged.length > 0 && (
-        <Section title="🟰 Unchanged Clauses" color="border-border-custom bg-surface-alt">
+        <Section title="Unchanged Clauses" icon={<path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />} color="border-l-slate-400 border-border-custom bg-surface-alt" iconColor="text-muted">
           {result.unchanged.map((c) => <ClaimLine key={c.text} claim={c} />)}
         </Section>
       )}
@@ -239,11 +239,14 @@ export function CompareForm() {
   );
 }
 
-function Section({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
+function Section({ title, icon, color, iconColor, children }: { title: string; icon: React.ReactNode; color: string; iconColor: string; children: React.ReactNode }) {
   return (
-    <section className={`border rounded-xl p-4 ${color} space-y-2`}>
-      <h3 className="font-semibold text-sm">{title}</h3>
-      {children}
+    <section className={`border-l-4 border rounded-xl overflow-hidden ${color} space-y-2`}>
+      <div className="flex items-center gap-2 px-4 pt-4 pb-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={iconColor}>{icon}</svg>
+        <h3 className="font-semibold text-sm">{title}</h3>
+      </div>
+      <div className="px-4 pb-4 space-y-2">{children}</div>
     </section>
   );
 }
@@ -254,8 +257,8 @@ const VerificationBadge = memo(function VerificationBadge({ claim }: { claim: Va
   if (verified === 0 && unverified === 0) return null;
   return (
     <div className="flex gap-2 text-xs">
-      {verified > 0 && <span className="text-emerald-600 dark:text-emerald-400">✓ {verified} verified</span>}
-      {unverified > 0 && <span className="text-faint">⚠ {unverified} unverified</span>}
+      {verified > 0 && <span className="text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" /><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> {verified} verified</span>}
+      {unverified > 0 && <span className="text-faint inline-flex items-center gap-0.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><path d="M12 10v3M12 16h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg> {unverified} unverified</span>}
     </div>
   );
 });
