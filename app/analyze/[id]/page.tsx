@@ -98,26 +98,39 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     let cancelled = false;
     async function analyze() {
-      try {
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ docId: id, language }),
-        });
-        if (cancelled) return;
-        if (!res.ok) {
-          const data = await res.json();
-          setError(data.error ?? "Analysis failed");
+      const MAX_RETRIES = 2;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ docId: id, language }),
+          });
+          if (cancelled) return;
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            if (attempt < MAX_RETRIES && (res.status >= 500 || res.status === 429)) {
+              await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+              continue;
+            }
+            setError(data.error ?? "Analysis failed");
+            return;
+          }
+          setMap(await res.json());
           return;
+        } catch {
+          if (cancelled) return;
+          if (attempt < MAX_RETRIES) {
+            await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+            continue;
+          }
+          setError("Network error. Please check your connection and try again.");
         }
-        setMap(await res.json());
-      } catch {
-        if (!cancelled) setError("Network error. Please check your connection and try again.");
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
-    analyze();
+    analyze().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
