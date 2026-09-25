@@ -154,6 +154,25 @@ export async function* generateStream(
   for await (const t of stream) yield t;
 }
 
+/** Translate an array of strings to the target language in a single lightweight call. */
+export async function translateTexts(texts: string[], targetLanguage: string): Promise<string[]> {
+  const prompt = `Translate each text to ${targetLanguage}. Return ONLY a JSON array of translated strings in the exact same order. No commentary.
+
+${JSON.stringify(texts)}`;
+  return withRetry(async () => {
+    const raw = await withTimeout(runOnce([{ text: prompt }], true, 0.1), TIMEOUT_MS);
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length !== texts.length) {
+        throw new Error("Translation returned wrong count — retrying");
+      }
+      return parsed as string[];
+    } catch {
+      throw new Error("AI returned malformed JSON — retrying");
+    }
+  });
+}
+
 /**
  * Transcribe a photographed or scanned legal document (image) to plain text via
  * Gemini vision. Enables the "photograph your contract" access flow — the OCR

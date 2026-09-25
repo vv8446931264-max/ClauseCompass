@@ -148,7 +148,7 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     if (next === language) return;
     setError("");
     setProgressStep(0);
-    setMap(null);
+    // ponytail: keep showing current map while translating — don't null it out
     setLoading(true);
     setLanguage(next);
   }
@@ -226,8 +226,8 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     };
   }, [map]);
 
-  /* ─── Loading ─── */
-  if (loading) {
+  /* ─── Loading (only show full spinner when there's no cached map to display) ─── */
+  if (loading && !map) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-8" aria-busy="true">
         <div className="relative w-20 h-20">
@@ -273,8 +273,8 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  /* ─── Error ─── */
-  if (error) {
+  /* ─── Error (full-page only when no map to fall back on) ─── */
+  if (error && !map) {
     return (
       <div className="text-center py-20 space-y-5 max-w-md mx-auto">
         <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto">
@@ -313,6 +313,20 @@ export default function AnalyzePage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
+      {/* ─── Translating banner / inline error ─── */}
+      {loading && map && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300" role="status">
+          <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity=".25" /><path d="M12 2a10 10 0 019.95 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+          Translating to {language}…
+        </div>
+      )}
+      {error && map && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-300" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 10v4M12 17h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+          Translation failed — showing previous version.
+          <button onClick={retryAnalysis} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+        </div>
+      )}
       {/* ─── Header ─── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="space-y-1 min-w-0 flex-1" lang={LANG_CODE[language] ?? "en"}>
