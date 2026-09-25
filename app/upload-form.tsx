@@ -157,7 +157,7 @@ export function UploadForm() {
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,image/png,image/jpeg,image/webp"
+              accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
               className="hidden"
               id="file-upload"
               aria-label="Upload or photograph a legal document"
@@ -185,7 +185,7 @@ export function UploadForm() {
                     <span className="text-blue-600 dark:text-blue-400 underline">browse</span>
                   </span>
                   <span className="text-xs text-faint block">
-                    PDF · photo/scan of a contract · plain text &middot; Max 10 MB
+                    PDF · DOCX · photo/scan of a contract · plain text &middot; Max 10 MB
                   </span>
                 </>
               )}

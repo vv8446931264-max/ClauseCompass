@@ -152,7 +152,7 @@ export function CompareForm() {
                     drag1 ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : file1Name ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/20" : "border-border-custom hover:border-muted"
                   }`}
                 >
-                  <input ref={file1Ref} type="file" accept=".pdf,.txt" className="hidden" id="file1-upload"
+                  <input ref={file1Ref} type="file" accept=".pdf,.txt,.docx" className="hidden" id="file1-upload"
                     aria-label="Upload original document" onChange={() => setFile1Name(file1Ref.current?.files?.[0]?.name ?? "")} />
                   <label htmlFor="file1-upload" className="cursor-pointer text-sm text-muted block">
                     {file1Name ? <span className="text-green-700 dark:text-green-400 font-medium">{file1Name}</span> : <>Drop file or <span className="text-blue-600 dark:text-blue-400 underline">browse</span></>}
@@ -169,7 +169,7 @@ export function CompareForm() {
                     drag2 ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : file2Name ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/20" : "border-border-custom hover:border-muted"
                   }`}
                 >
-                  <input ref={file2Ref} type="file" accept=".pdf,.txt" className="hidden" id="file2-upload"
+                  <input ref={file2Ref} type="file" accept=".pdf,.txt,.docx" className="hidden" id="file2-upload"
                     aria-label="Upload revised document" onChange={() => setFile2Name(file2Ref.current?.files?.[0]?.name ?? "")} />
                   <label htmlFor="file2-upload" className="cursor-pointer text-sm text-muted block">
                     {file2Name ? <span className="text-green-700 dark:text-green-400 font-medium">{file2Name}</span> : <>Drop file or <span className="text-blue-600 dark:text-blue-400 underline">browse</span></>}

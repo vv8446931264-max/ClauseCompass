@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { setDoc, getDoc, setDecisionMap, getDecisionMap, deleteDoc, setCompare, getCompare } from "@/lib/store";
+import { setDoc, getDoc, setDecisionMap, getDecisionMap, deleteDoc, setCompare, getCompare, memoryPressureOk } from "@/lib/store";
 import type { ExtractedDoc, ValidatedDecisionMap, ValidatedCompareResult } from "@/lib/schemas";
 
 function makeDoc(id: string): ExtractedDoc {
@@ -121,5 +121,29 @@ describe("store", () => {
     }
     // the very first doc must have been evicted once the cap was exceeded
     expect(getDoc(first.id)).toBeUndefined();
+  });
+
+  it("returns { stored: true } for normal documents", () => {
+    const doc = makeDoc(`store-ok-${Date.now()}`);
+    const result = setDoc(doc);
+    expect(result).toEqual({ stored: true });
+  });
+
+  it("rejects documents exceeding per-document text limit", () => {
+    const bigText = "x".repeat(1_100_000); // ~2.2 MB in JS string bytes, exceeds 2 MB cap
+    const doc: ExtractedDoc = {
+      id: `store-big-${Date.now()}`,
+      filename: "huge.txt",
+      pages: [{ n: 1, text: bigText }],
+      fullText: bigText,
+    };
+    const result = setDoc(doc);
+    expect(result.stored).toBe(false);
+    expect(result.reason).toContain("per-document size limit");
+    expect(getDoc(doc.id)).toBeUndefined();
+  });
+
+  it("memoryPressureOk returns true under normal test conditions", () => {
+    expect(memoryPressureOk()).toBe(true);
   });
 });

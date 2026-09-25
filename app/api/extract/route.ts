@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractPdfPages, extractTextPages } from "@/lib/extract";
+import { extractPdfPages, extractDocxPages, extractTextPages } from "@/lib/extract";
 import { transcribeImage } from "@/lib/llm";
-import { MAX_FILE_SIZE, MAX_PAGES, ALLOWED_TYPES, IMAGE_TYPES } from "@/lib/schemas";
+import { MAX_FILE_SIZE, MAX_PAGES, ALLOWED_TYPES, IMAGE_TYPES, DOCX_TYPE } from "@/lib/schemas";
 import * as store from "@/lib/store";
 import { checkRateLimit, parseClientIp } from "@/lib/ratelimit";
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (file) {
     if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
       return NextResponse.json(
-        { error: `Unsupported file type: ${file.type}. Accepted: PDF, plain text` },
+        { error: `Unsupported file type: ${file.type}. Accepted: PDF, DOCX, plain text, images` },
         { status: 400 }
       );
     }
@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
     if (file && file.type === "application/pdf") {
       const buffer = await file.arrayBuffer();
       pages = await extractPdfPages(buffer);
+    } else if (file && file.type === DOCX_TYPE) {
+      const buffer = await file.arrayBuffer();
+      pages = await extractDocxPages(buffer);
     } else if (file && IMAGE_TYPES.includes(file.type as (typeof IMAGE_TYPES)[number])) {
       // Photograph / scan of a legal document → Gemini vision OCR → same pipeline
       const buffer = await file.arrayBuffer();
@@ -90,7 +93,10 @@ export async function POST(req: NextRequest) {
       );
     }
     const doc = { id, filename: file?.name ?? "pasted-text.txt", pages, fullText };
-    store.setDoc(doc);
+    const storeResult = store.setDoc(doc);
+    if (!storeResult.stored) {
+      return NextResponse.json({ error: storeResult.reason }, { status: 503 });
+    }
 
     return NextResponse.json({
       id: doc.id,

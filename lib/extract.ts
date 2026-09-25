@@ -24,6 +24,15 @@ export async function extractPdfPages(buffer: ArrayBuffer): Promise<Page[]> {
 }
 
 /**
+ * Extract text from a DOCX buffer using mammoth.
+ */
+export async function extractDocxPages(buffer: ArrayBuffer): Promise<Page[]> {
+  const mammoth = await import("mammoth");
+  const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
+  return [{ n: 1, text: result.value }];
+}
+
+/**
  * Parse plain text into a single "page".
  */
 export function extractTextPages(text: string): Page[] {

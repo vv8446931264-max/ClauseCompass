@@ -2,20 +2,39 @@ import type { ExtractedDoc, ValidatedDecisionMap, ValidatedCompareResult } from 
 
 interface DocSession {
   doc: ExtractedDoc;
-  decisionMaps: Map<string, ValidatedDecisionMap>; // keyed by output language
+  decisionMaps: Map<string, ValidatedDecisionMap>;
   createdAt: number;
+  estimatedBytes: number;
 }
 
-/** In-memory document store with automatic TTL expiry. No database by design — privacy-first, documents never hit disk. */
 const TTL_MS = 30 * 60 * 1000; // 30 minutes
 const CLEANUP_INTERVAL_MS = 60_000;
-const MAX_STORE_SIZE = 1000; // @architecture-audit: bound memory; evict oldest past this
+const MAX_STORE_SIZE = 1000;
+const MAX_DOC_TEXT_BYTES = 2 * 1024 * 1024; // 2 MB extracted text per document
+const MAX_TOTAL_BYTES = 512 * 1024 * 1024; // 512 MB total memory budget — backpressure via 503
+// ponytail: swap this module for Redis/Firestore for horizontal scaling — interface stays the same
+
 const store = new Map<string, DocSession>();
+let totalStoredBytes = 0;
+
+function estimateBytes(doc: ExtractedDoc): number {
+  let bytes = doc.fullText.length * 2; // JS strings are UTF-16
+  for (const p of doc.pages) bytes += p.text.length * 2;
+  return bytes + 512;
+}
+
+function removeSession(id: string): boolean {
+  const session = store.get(id);
+  if (!session) return false;
+  totalStoredBytes -= session.estimatedBytes;
+  store.delete(id);
+  return true;
+}
 
 function purgeExpired() {
   const now = Date.now();
   for (const [id, session] of store) {
-    if (now - session.createdAt > TTL_MS) store.delete(id);
+    if (now - session.createdAt > TTL_MS) removeSession(id);
   }
 }
 
@@ -23,23 +42,48 @@ if (typeof setInterval !== "undefined") {
   setInterval(purgeExpired, CLEANUP_INTERVAL_MS);
 }
 
-export function setDoc(doc: ExtractedDoc): void {
-  // @perf-audit: O(1) write — the interval sweep handles bulk expiry; here we only
-  // evict the single oldest entry if we're at the cap (Map preserves insertion order).
-  if (store.size >= MAX_STORE_SIZE) {
-    const oldest = store.keys().next().value;
-    if (oldest) store.delete(oldest);
-  }
-  store.set(doc.id, { doc, decisionMaps: new Map(), createdAt: Date.now() });
+export function memoryPressureOk(): boolean {
+  if (typeof process === "undefined" || !process.memoryUsage) return true;
+  const mem = process.memoryUsage();
+  const HEAP_RATIO_LIMIT = 0.8;
+  const HEAP_ABS_LIMIT = 1.4 * 1024 * 1024 * 1024;
+  return mem.heapUsed / mem.heapTotal < HEAP_RATIO_LIMIT && mem.heapUsed < HEAP_ABS_LIMIT;
 }
 
-// @perf-audit: O(1) freshness check on the read path instead of an O(n) full-store scan
-// per request; the setInterval sweep handles bulk cleanup.
+export function setDoc(doc: ExtractedDoc): { stored: boolean; reason?: string } {
+  const bytes = estimateBytes(doc);
+
+  if (bytes > MAX_DOC_TEXT_BYTES) {
+    return { stored: false, reason: "Document text exceeds per-document size limit" };
+  }
+
+  if (!memoryPressureOk()) {
+    return { stored: false, reason: "Server under memory pressure — try again shortly" };
+  }
+
+  if (store.has(doc.id)) removeSession(doc.id);
+
+  while (totalStoredBytes + bytes > MAX_TOTAL_BYTES && store.size > 0) {
+    const oldest = store.keys().next().value;
+    if (oldest) removeSession(oldest);
+    else break;
+  }
+
+  if (store.size >= MAX_STORE_SIZE) {
+    const oldest = store.keys().next().value;
+    if (oldest) removeSession(oldest);
+  }
+
+  totalStoredBytes += bytes;
+  store.set(doc.id, { doc, decisionMaps: new Map(), createdAt: Date.now(), estimatedBytes: bytes });
+  return { stored: true };
+}
+
 function live(id: string): DocSession | undefined {
   const s = store.get(id);
   if (!s) return undefined;
   if (Date.now() - s.createdAt > TTL_MS) {
-    store.delete(id);
+    removeSession(id);
     return undefined;
   }
   return s;
@@ -66,14 +110,12 @@ export function getDecisionMap(
 }
 
 export function deleteDoc(id: string): boolean {
-  // Drop any cached comparison that referenced this doc on either side
   for (const key of compareCache.keys()) {
     if (key.startsWith(`${id}:`) || key.endsWith(`:${id}`)) compareCache.delete(key);
   }
-  return store.delete(id);
+  return removeSession(id);
 }
 
-// @perf-audit: cache two-document comparisons so re-opening the same pair doesn't re-call Gemini
 const compareCache = new Map<string, ValidatedCompareResult>();
 const MAX_COMPARE_CACHE = 500;
 
