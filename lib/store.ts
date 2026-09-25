@@ -44,10 +44,9 @@ if (typeof setInterval !== "undefined") {
 
 export function memoryPressureOk(): boolean {
   if (typeof process === "undefined" || !process.memoryUsage) return true;
-  const mem = process.memoryUsage();
-  const HEAP_RATIO_LIMIT = 0.8;
-  const HEAP_ABS_LIMIT = 1.4 * 1024 * 1024 * 1024;
-  return mem.heapUsed / mem.heapTotal < HEAP_RATIO_LIMIT && mem.heapUsed < HEAP_ABS_LIMIT;
+  // RSS = actual physical memory; heapUsed/heapTotal ratio is unreliable because V8 resizes heapTotal dynamically
+  const RSS_LIMIT = 900 * 1024 * 1024; // 900 MB — leaves headroom on a 1 Gi Cloud Run container
+  return process.memoryUsage().rss < RSS_LIMIT;
 }
 
 export function setDoc(doc: ExtractedDoc): { stored: boolean; reason?: string } {
